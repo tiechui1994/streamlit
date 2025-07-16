@@ -6,11 +6,6 @@ import subprocess
 
 st.header("欢迎来到streamlit项目")
 
-if st.button("打开文件"):
-    home = pathlib.Path.home()
-    for item in os.listdir(home):
-        if pathlib.Path(item).is_file(): st.header(f"文件: {item}")
-
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "一起来 happy"}]
@@ -36,15 +31,17 @@ if prompt := st.chat_input("请输入内容:"):
         message_placeholder = st.empty()
         full_response = ""
         try:
-            result = subprocess.run(prompt, capture_output=True, shell=True, text=True, check=True)
-            if result.stdout:
-                assistant_response = result.stdout.strip()
-            elif result.stderr:
+            result = subprocess.run(prompt, capture_output=True, shell=True, text=True, check=False)
+            assistant_response = result.stdout.strip()
+            if result.stderr:
                 assistant_response = result.stderr.strip()
         except subprocess.CalledProcessError as e:
             assistant_response = f"错误: {e}"
         except Exception as e:
             assistant_response = f"{e}"
+        
+        if assistant_response is None:
+            assistant_response = ''
         # Simulate stream of response with milliseconds delay
         for chunk in assistant_response.split('\n'):
             full_response += chunk + "\n"
