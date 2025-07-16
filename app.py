@@ -1,6 +1,5 @@
 import streamlit as st
 import pathlib
-import os
 import time
 import subprocess
 
