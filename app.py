@@ -7,6 +7,7 @@ import urllib.request
 import shutil
 from datetime import datetime
 import os
+import base64
 
 ROOT_DIR = pathlib.Path("/tmp")
 FRPC_BIN_FILE = ROOT_DIR / "frpc"
@@ -14,7 +15,7 @@ FRPC_BIN_CONFIG = ROOT_DIR / "frpc.toml"
 FRPC_PID = ROOT_DIR / "frpc.pid"
 PROXY_BIN_FILE = ROOT_DIR / "proxy"
 PROXY_BIN_CONFIG = ROOT_DIR / "proxy.yaml"
-PROXY_PID = ROOT_DIR / "frpc.pid"
+PROXY_PID = ROOT_DIR / "proxy.pid"
 
 def debug_log(message):
     print(message)
@@ -68,7 +69,25 @@ def download_binary(download_url, target_path):
 
 
 # 创建启动脚本
-def create_startup_script():  
+def create_startup_script(): 
+    try:
+        frpc = st.secrets["PRPC_CONFIG"]
+        if frpc:
+            frpc = base64.standard_b64decode(frpc)
+            with open(FRPC_BIN_CONFIG, 'w+', encoding='utf-8') as f:
+                f.write(str(frpc, encoding='utf-8'))
+        else:
+            debug_log("FRPC_CONFIG NOT FOUND")
+        proxy = st.secrets["PROXY_CONFIG"]
+        if proxy:
+            proxy = base64.standard_b64decode(proxy)
+            with open(PROXY_BIN_CONFIG, 'w+', encoding='utf-8') as f:
+                f.write(str(proxy, encoding='utf-8'))
+        else:
+            debug_log("PROXY_CONFIG NOT FOUND")
+    except Exception as e:
+        debug_log(f"配置操作失败: {e}")
+        return 
     start_script_path = ROOT_DIR / "frpc.sh"
     start_content = f'''#!/bin/bash
 cd {ROOT_DIR.resolve()}
@@ -118,14 +137,20 @@ def install():
     success = download_binary(url, FRPC_BIN_FILE)
     if not success:
         return
-    url = ""
+    url = "https://api.quinn.eu.org/api/file/mihomo"
     success = download_binary(url, PROXY_BIN_FILE)
     if not success:
         return
     create_startup_script()
-    start_services()
+    start_services()    
 
 st.header("欢迎来到streamlit项目")
+
+running = check_status(FRPC_PID) and check_status(PROXY_PID)
+if st.button("运行", disabled=running):
+    install()
+if not running:
+    install()
 
 # Initialize chat history
 if "messages" not in st.session_state:
