@@ -30,6 +30,9 @@ def write_debug_log(message):
         print(f"写入日志失败: {e}")
 
 def download_file(url, target_path, mode='wb'):
+    if pathlib.Path(target_path).exists():
+        return True
+
     retries = 0
     max_retries = 3
     current_delay = 10
